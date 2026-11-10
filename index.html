@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giappone Trip Planner 🇯🇵</title>
+    <!-- Caricamento Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter e Noto Sans JP per un tocco estetico giapponese -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons per icone pulite e moderne -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        jp: ['Noto Sans JP', 'sans-serif'],
+                    },
+                    colors: {
+                        indigoJapan: {
+                            950: '#131b2e',
+                            900: '#1a253c',
+                            800: '#243352',
+                            700: '#324670',
+                        },
+                        washi: {
+                            50: '#fcfaf5',
+                            100: '#f7f3e8',
+                            200: '#ede5d2',
+                        },
+                        torii: {
+                            500: '#e64833',
+                            600: '#cc3723',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Layout Masonry reattivo tramite CSS Columns per adattare ogni card all'altezza del testo */
+        .masonry-grid {
+            column-count: 1;
+            column-gap: 1.25rem;
+        }
+        @media (min-width: 640px) {
+            .masonry-grid {
+                column-count: 2;
+            }
+        }
+        @media (min-width: 1024px) {
+            .masonry-grid {
+                column-count: 3;
+            }
+        }
+        @media (min-width: 1440px) {
+            .masonry-grid {
+                column-count: 4;
+            }
+        }
+
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 1.25rem;
+            display: inline-block;
+            width: 100%;
+        }
+
+        /* Personalizzazione scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.6);
+        }
+
+        /* Animazione fluida modali */
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96) translateY(8px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-animate {
+            animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="bg-washi-100 text-slate-800 font-sans antialiased selection:bg-torii-500 selection:text-white overflow-x-hidden">
+
+    <!-- Overlay mobile per sidebar -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-indigoJapan-950/60 backdrop-blur-xs z-30 hidden lg:hidden transition-opacity"></div>
+
+    <div class="flex min-h-screen">
+        <!-- SIDEBAR VERTICALE A SINISTRA (Blu Indaco Giapponese) -->
+        <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-40 h-screen w-72 bg-indigoJapan-900 text-washi-50 flex flex-col shadow-2xl transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shrink-0">
+            
+            <!-- Header Sidebar / Logo -->
+            <div class="p-6 border-b border-indigoJapan-800/80 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-torii-500 flex items-center justify-center text-white shadow-lg shadow-torii-500/30 font-jp font-bold text-xl">
+                        日本
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-tight text-white leading-tight">Giappone Trip</h1>
+                        <p class="text-xs text-indigo-300 font-medium">Bacheca di gruppo</p>
+                    </div>
+                </div>
+                <button id="closeSidebarBtn" class="lg:hidden p-2 rounded-lg text-indigo-300 hover:text-white hover:bg-indigoJapan-800 transition-colors" aria-label="Chiudi menu">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Lista Pagine / Categorie -->
+            <div class="flex-1 overflow-y-auto px-4 py-5 space-y-6">
+                <div>
+                    <div class="px-3 mb-2 flex items-center justify-between">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-indigo-300/80">Le nostre pagine</span>
+                    </div>
+                    <nav id="categoryList" class="space-y-1.5" aria-label="Categorie del viaggio">
+                        <!-- Popolato dinamicamente via JavaScript -->
+                    </nav>
+                </div>
+
+                <!-- Pulsante "+" per aggiungere una nuova categoria/pagina -->
+                <div class="px-1">
+                    <button id="openAddCategoryBtn" class="w-full py-2.5 px-3.5 rounded-xl border border-dashed border-indigo-400/40 hover:border-torii-500 bg-indigoJapan-800/40 hover:bg-indigoJapan-800 text-indigo-200 hover:text-white flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 group cursor-pointer">
+                        <span class="w-6 h-6 rounded-lg bg-indigoJapan-700 group-hover:bg-torii-500 text-white flex items-center justify-center transition-colors">
+                            <i class="ph ph-plus font-bold"></i>
+                        </span>
+                        <span>Nuova categoria</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stato sincronizzazione cloud in basso nella sidebar -->
+            <div class="p-4 border-t border-indigoJapan-800/80 bg-indigoJapan-950/40">
+                <div class="flex items-center gap-2.5 text-xs text-indigo-200">
+                    <span id="syncDot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="syncText">Connessione al cloud...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- AREA PRINCIPALE A DESTRA -->
+        <div class="flex-1 flex flex-col min-w-0">
+            
+            <!-- Top Header Bar -->
+            <header class="sticky top-0 z-20 bg-washi-50/90 backdrop-blur-md border-b border-washi-200 px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3 min-w-0">
+                    <!-- Bottone Hamburger Mobile -->
+                    <button id="openSidebarBtn" class="lg:hidden p-2.5 rounded-xl bg-white border border-washi-200 text-indigoJapan-900 hover:bg-washi-100 shadow-xs transition-colors" aria-label="Apri menu">
+                        <i class="ph ph-list text-xl"></i>
+                    </button>
+
+                    <!-- Titolo Pagina Attiva -->
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span id="activeCategoryIcon" class="text-2xl sm:text-3xl shrink-0">✈️</span>
+                        <div class="min-w-0">
+                            <h2 id="activeCategoryTitle" class="text-xl sm:text-2xl font-bold text-indigoJapan-950 truncate">Volo</h2>
+                            <p id="activeCategorySubtitle" class="text-xs sm:text-sm text-slate-500 truncate">Caricamento appunti...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Azioni Header (Condivisione con gli amici) -->
+                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <button id="openShareModalBtn" class="px-3.5 sm:px-4 py-2.5 rounded-xl bg-indigoJapan-900 hover:bg-indigoJapan-800 text-white text-sm font-medium shadow-sm flex items-center gap-2 transition-all active:scale-95 cursor-pointer">
+                        <i class="ph ph-share-network text-lg text-amber-300"></i>
+                        <span class="hidden sm:inline">Condividi con gli amici</span>
+                        <span class="sm:hidden">Condividi</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Contenuto della Pagina (Griglia Masonry a riquadri variabili) -->
+            <main class="flex-1 p-4 sm:p-8 pb-28 max-w-7xl w-full mx-auto">
+                
+                <!-- Stato di caricamento iniziale -->
+                <div id="loadingState" class="py-20 flex flex-col items-center justify-center text-center">
+                    <div class="w-12 h-12 rounded-2xl bg-torii-500/10 text-torii-500 flex items-center justify-center mb-4 animate-bounce">
+                        <i class="ph ph-airplane-tilt text-2xl"></i>
+                    </div>
+                    <p class="text-slate-600 font-medium">Preparazione dell'itinerario in corso...</p>
+                </div>
+
+                <!-- Stato vuoto (quando una pagina non ha ancora riquadri) -->
+                <div id="emptyState" class="hidden py-16 px-4 flex flex-col items-center justify-center text-center bg-white/60 border border-dashed border-washi-200 rounded-3xl max-w-lg mx-auto mt-6">
+                    <div class="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl mb-4 shadow-xs">
+                        📝
+                    </div>
+                    <h3 class="text-lg font-bold text-indigoJapan-950 mb-1">Nessun riquadro in questa pagina</h3>
+                    <p class="text-sm text-slate-500 mb-6">Aggiungi orari, indirizzi, link utili o idee per il gruppo cliccando sul pulsante "+" in basso.</p>
+                    <button onclick="openNoteModal()" class="px-5 py-2.5 rounded-xl bg-torii-500 hover:bg-torii-600 text-white font-medium text-sm shadow-md shadow-torii-500/20 flex items-center gap-2 transition-all cursor-pointer">
+                        <i class="ph ph-plus-bold"></i>
+                        <span>Aggiungi il primo riquadro</span>
+                    </button>
+                </div>
+
+                <!-- Contenitore Masonry delle Card -->
+                <div id="notesGrid" class="masonry-grid">
+                    <!-- I riquadri vengono renderizzati dinamicamente qui -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- PULSANTE "+" FLOTTANTE IN BASSO A DESTRA PER AGGIUNGERE UN RIQUADRO -->
+    <button id="fabAddNote" onclick="openNoteModal()" class="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-20 h-14 px-5 sm:px-6 rounded-2xl bg-torii-500 hover:bg-torii-600 text-white shadow-xl shadow-torii-500/35 hover:shadow-2xl hover:shadow-torii-500/45 flex items-center gap-2.5 font-semibold text-base transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer group" aria-label="Aggiungi nuovo riquadro">
+        <i class="ph ph-plus text-2xl font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+        <span>Aggiungi riquadro</span>
+    </button>
+
+    <!-- ===================================================================== -->
+    <!-- MODALE 1: AGGIUNGI / MODIFICA RIQUADRO                                -->
+    <!-- ===================================================================== -->
+    <div id="noteModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-indigoJapan-950/60 backdrop-blur-xs">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-washi-200 modal-animate">
+            <div class="px-6 py-4 bg-washi-50 border-b border-washi-200 flex items-center justify-between">
+                <h3 id="noteModalTitle" class="font-bold text-lg text-indigoJapan-950 flex items-center gap-2">
+                    <i class="ph ph-note-pencil text-torii-500 text-xl"></i>
+                    <span>Nuovo riquadro</span>
+                </h3>
+                <button onclick="closeNoteModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-washi-200/60 transition-colors cursor-pointer">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <form id="noteForm" class="p-6 space-y-4">
+                <input type="hidden" id="editNoteId" value="">
+
+                <!-- Campo Titolo -->
+                <div>
+                    <label for="noteTitleInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Titolo del riquadro *</label>
+                    <input type="text" id="noteTitleInput" required placeholder="Es. Volo andata ITA Airways, Hotel Shinjuku, Tempio Senso-ji..." class="w-full px-4 py-2.5 rounded-xl bg-washi-50 border border-washi-200 focus:border-torii-500 focus:ring-2 focus:ring-torii-500/20 outline-hidden text-slate-800 font-medium placeholder:text-slate-400 transition-all">
+                </div>
+
+                <!-- Campo Testo e Link -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="noteContentInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-500">Informazioni, note e link</label>
+                        <span class="text-[11px] text-slate-400">I link https:// diventano cliccabili</span>
+                    </div>
+                    <textarea id="noteContentInput" rows="5" placeholder="Scrivi qui tutti i dettagli, orari, indirizzi o incolla link utili (es. Google Maps, Booking, Skyscanner)... Il riquadro si adatterà automaticamente alla lunghezza!" class="w-full px-4 py-3 rounded-xl bg-washi-50 border border-washi-200 focus:border-torii-500 focus:ring-2 focus:ring-torii-500/20 outline-hidden text-slate-700 text-sm leading-relaxed placeholder:text-slate-400 resize-y transition-all"></textarea>
+                </div>
+
+                <!-- Selettore Colore Riquadro -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Colore del riquadro</label>
+                    <div id="colorPicker" class="flex flex-wrap gap-2.5">
+                        <!-- Bottoni colore generati via JS -->
+                    </div>
+                </div>
+
+                <!-- Azioni Form -->
+                <div class="pt-3 flex items-center justify-end gap-2.5 border-t border-washi-100">
+                    <button type="button" onclick="closeNoteModal()" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-washi-100 transition-colors cursor-pointer">
+                        Annulla
+                    </button>
+                    <button type="submit" id="saveNoteBtn" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-torii-500 hover:bg-torii-600 text-white shadow-md shadow-torii-500/20 flex items-center gap-2 transition-all cursor-pointer">
+                        <i class="ph ph-check-bold"></i>
+                        <span>Salva riquadro</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODALE 2: AGGIUNGI NUOVA CATEGORIA / PAGINA SIDEBAR                   -->
+    <!-- ===================================================================== -->
+    <div id="categoryModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-indigoJapan-950/60 backdrop-blur-xs">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-washi-200 modal-animate">
+            <div class="px-6 py-4 bg-indigoJapan-900 text-white flex items-center justify-between">
+                <h3 class="font-bold text-lg flex items-center gap-2">
+                    <i class="ph ph-folder-plus text-amber-300 text-xl"></i>
+                    <span>Nuova pagina nella barra</span>
+                </h3>
+                <button onclick="closeCategoryModal()" class="p-2 rounded-xl text-indigo-300 hover:text-white hover:bg-indigoJapan-800 transition-colors cursor-pointer">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <form id="categoryForm" class="p-6 space-y-4">
+                <div>
+                    <label for="categoryNameInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Nome della categoria *</label>
+                    <input type="text" id="categoryNameInput" required maxlength="30" placeholder="Es. Ristoranti, Trasporti JR Pass, Shopping..." class="w-full px-4 py-2.5 rounded-xl bg-washi-50 border border-washi-200 focus:border-indigoJapan-800 focus:ring-2 focus:ring-indigoJapan-800/20 outline-hidden text-slate-800 font-medium transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Scegli un'icona</label>
+                    <div id="emojiPicker" class="grid grid-cols-6 gap-2">
+                        <!-- Emoji popolari per viaggi in Giappone -->
+                    </div>
+                </div>
+
+                <div class="pt-3 flex items-center justify-end gap-2.5 border-t border-washi-100">
+                    <button type="button" onclick="closeCategoryModal()" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-washi-100 transition-colors cursor-pointer">
+                        Annulla
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigoJapan-900 hover:bg-indigoJapan-800 text-white shadow-md flex items-center gap-2 transition-all cursor-pointer">
+                        <i class="ph ph-plus-bold"></i>
+                        <span>Crea pagina</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODALE 3: CONDIVIDI CON GLI AMICI                                     -->
+    <!-- ===================================================================== -->
+    <div id="shareModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-indigoJapan-950/60 backdrop-blur-xs">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-washi-200 modal-animate">
+            <div class="px-6 py-4 bg-washi-50 border-b border-washi-200 flex items-center justify-between">
+                <h3 class="font-bold text-lg text-indigoJapan-950 flex items-center gap-2">
+                    <i class="ph ph-users-three text-torii-500 text-xl"></i>
+                    <span>Collabora con i tuoi amici</span>
+                </h3>
+                <button onclick="closeShareModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-washi-200/60 transition-colors cursor-pointer">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-100 text-sm text-indigoJapan-900 space-y-2">
+                    <p class="font-semibold flex items-center gap-1.5">
+                        <i class="ph ph-sparkle text-torii-500"></i>
+                        <span>Sincronizzazione in tempo reale attiva!</span>
+                    </p>
+                    <p class="text-slate-600 text-xs leading-relaxed">
+                        Ogni modifica, nuova pagina o riquadro aggiunto qui viene salvato nel cloud e aggiornato istantaneamente sullo schermo di tutti i partecipanti.
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Link diretto a questa bacheca</label>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="shareUrlInput" readonly class="flex-1 px-3.5 py-2.5 rounded-xl bg-washi-100 border border-washi-200 text-xs text-slate-600 font-mono select-all outline-hidden">
+                        <button onclick="copyShareLink()" class="px-4 py-2.5 rounded-xl bg-torii-500 hover:bg-torii-600 text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 shrink-0 transition-all cursor-pointer">
+                            <i class="ph ph-copy text-base"></i>
+                            <span>Copia</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-xs text-slate-500 space-y-1.5 pt-2 border-t border-washi-100">
+                    <p class="font-semibold text-slate-700">Come farlo aprire ai tuoi amici:</p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li>Se state usando questa web app condivisa, invia loro direttamente il <strong>link della pagina</strong> su WhatsApp o Telegram.</li>
+                        <li>Se hai scaricato il file HTML sul tuo computer, ti basta caricarlo gratuitamente su servizi come <strong>Netlify Drop</strong>, <strong>Vercel</strong> o <strong>GitHub Pages</strong> per ottenere un link pubblico da mandare al gruppo!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODALE 4: CONFERMA ELIMINAZIONE PERSONALIZZATA (NO confirm() NATIVO)  -->
+    <!-- ===================================================================== -->
+    <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-indigoJapan-950/60 backdrop-blur-xs">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 border border-washi-200 modal-animate text-center">
+            <div class="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-2xl mx-auto mb-3">
+                <i class="ph ph-trash"></i>
+            </div>
+            <h3 id="confirmTitle" class="font-bold text-lg text-indigoJapan-950 mb-1">Eliminare elemento?</h3>
+            <p id="confirmMessage" class="text-sm text-slate-500 mb-6">Questa azione non può essere annullata.</p>
+            <div class="flex items-center justify-center gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 rounded-xl text-sm font-medium text-slate-600 bg-washi-100 hover:bg-washi-200 transition-colors cursor-pointer">
+                    Annulla
+                </button>
+                <button id="confirmActionBtn" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 shadow-sm transition-colors cursor-pointer">
+                    Elimina
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICHE NON INVASIVO -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-indigoJapan-950 text-white text-sm font-medium shadow-xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 translate-y-2">
+        <i id="toastIcon" class="ph ph-check-circle text-emerald-400 text-lg"></i>
+        <span id="toastMessage">Operazione completata</span>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- LOGICA APPLICATIVA & SINCRONIZZAZIONE CLOUD (FIREBASE FIRESTORE)      -->
+    <!-- ===================================================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configurazione dinamica ambiente
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'giappone-trip-planner';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+
+        // Palette colori disponibili per i riquadri (ispirati all'estetica giapponese)
+        const CARD_COLORS = [
+            { id: 'washi', name: 'Carta Washi', bg: 'bg-white', border: 'border-washi-200', accent: 'bg-indigoJapan-800', dot: '#ffffff' },
+            { id: 'sakura', name: 'Rosa Sakura', bg: 'bg-rose-50/90', border: 'border-rose-200', accent: 'bg-rose-500', dot: '#ffe4e6' },
+            { id: 'matcha', name: 'Verde Matcha', bg: 'bg-emerald-50/90', border: 'border-emerald-200', accent: 'bg-emerald-600', dot: '#d1fae5' },
+            { id: 'sora', name: 'Azzurro Cielo', bg: 'bg-sky-50/90', border: 'border-sky-200', accent: 'bg-sky-600', dot: '#e0f2fe' },
+            { id: 'yuzu', name: 'Giallo Yuzu', bg: 'bg-amber-50/90', border: 'border-amber-200', accent: 'bg-amber-500', dot: '#fef3c7' }
+        ];
+
+        // Emoji selezionabili per nuove categorie
+        const CATEGORY_EMOJIS = ['🍜', '🚄', '⛩️', '🛍️', '🗻', '🍣', '🎮', '♨️', '🎫', '📸', '💴', '🌸'];
+
+        // Categorie predefinite richieste dall'utente
+        const DEFAULT_CATEGORIES = [
+            { id: 'volo', name: 'Volo', icon: '✈️', order: 1, isDefault: true },
+            { id: 'hotel', name: 'Hotel', icon: '🏨', order: 2, isDefault: true },
+            { id: 'attrazioni', name: 'Attrazioni / Cose da fare', icon: '⛩️', order: 3, isDefault: true },
+            { id: 'itinerario', name: 'Itinerario', icon: '🗺️', order: 4, isDefault: true }
+        ];
+
+        // Stato globale dell'app
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let categories = [...DEFAULT_CATEGORIES];
+        let notes = [];
+        let activeCategoryId = 'volo';
+        let selectedCardColor = 'washi';
+        let selectedCategoryEmoji = '🍜';
+        let pendingConfirmAction = null;
+
+        // Riferimenti DOM
+        const categoryListEl = document.getElementById('categoryList');
+        const notesGridEl = document.getElementById('notesGrid');
+        const loadingStateEl = document.getElementById('loadingState');
+        const emptyStateEl = document.getElementById('emptyState');
+        const activeCategoryTitleEl = document.getElementById('activeCategoryTitle');
+        const activeCategoryIconEl = document.getElementById('activeCategoryIcon');
+        const activeCategorySubtitleEl = document.getElementById('activeCategorySubtitle');
+
+        // =========================================================================
+        // 1. INIZIALIZZAZIONE INTERFACCIA UI (Selettori colori, emoji, sidebar)
+        // =========================================================================
+        function initUIControls() {
+            // Popola selettore colori nella modale riquadro
+            const colorPicker = document.getElementById('colorPicker');
+            colorPicker.innerHTML = CARD_COLORS.map(c => `
+                <button type="button" data-color="${c.id}" onclick="selectCardColor('${c.id}')"
+                    class="color-option flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${c.id === selectedCardColor ? 'ring-2 ring-torii-500 border-torii-500 bg-washi-50' : 'border-slate-200 hover:bg-slate-50'}">
+                    <span class="w-4 h-4 rounded-full border border-slate-300 shadow-2xs" style="background-color: ${c.dot}"></span>
+                    <span>${c.name}</span>
+                </button>
+            `).join('');
+
+            // Popola selettore emoji nella modale categoria
+            const emojiPicker = document.getElementById('emojiPicker');
+            emojiPicker.innerHTML = CATEGORY_EMOJIS.map(emoji => `
+                <button type="button" data-emoji="${emoji}" onclick="selectCategoryEmoji('${emoji}')"
+                    class="emoji-option h-10 rounded-xl border text-xl flex items-center justify-center transition-all cursor-pointer ${emoji === selectedCategoryEmoji ? 'border-indigoJapan-900 bg-indigo-50 ring-2 ring-indigoJapan-900/20' : 'border-washi-200 hover:bg-washi-50'}">
+                    ${emoji}
+                </button>
+            `).join('');
+
+            // Gestione apertura/chiusura sidebar su mobile
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            const openBtn = document.getElementById('openSidebarBtn');
+            const closeBtn = document.getElementById('closeSidebarBtn');
+
+            const toggleSidebar = (open) => {
+                if (open) {
+                    sidebar.classList.remove('-translate-x-full');
+                    overlay.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                }
+            };
+
+            openBtn.addEventListener('click', () => toggleSidebar(true));
+            closeBtn.addEventListener('click', () => toggleSidebar(false));
+            overlay.addEventListener('click', () => toggleSidebar(false));
+
+            // Modale nuova categoria
+            document.getElementById('openAddCategoryBtn').addEventListener('click', () => {
+                toggleSidebar(false);
+                document.getElementById('categoryNameInput').value = '';
+                selectCategoryEmoji('🍜');
+                const modal = document.getElementById('categoryModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => document.getElementById('categoryNameInput').focus(), 100);
+            });
+
+            // Modale condividi
+            document.getElementById('openShareModalBtn').addEventListener('click', () => {
+                document.getElementById('shareUrlInput').value = window.location.href;
+                const modal = document.getElementById('shareModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+
+            // Submit form nuovo/modifica riquadro
+            document.getElementById('noteForm').addEventListener('submit', handleNoteSubmit);
+
+            // Submit form nuova categoria
+            document.getElementById('categoryForm').addEventListener('submit', handleCategorySubmit);
+
+            // Bottone conferma eliminazione
+            document.getElementById('confirmActionBtn').addEventListener('click', () => {
+                if (typeof pendingConfirmAction === 'function') {
+                    pendingConfirmAction();
+                }
+                closeConfirmModal();
+            });
+        }
+
+        // =========================================================================
+        // 2. INIZIALIZZAZIONE FIREBASE & SINCRONIZZAZIONE TEMPO REALE
+        // =========================================================================
+        async function initFirebase() {
+            if (!firebaseConfig) {
+                updateSyncStatus('error', 'Modalità locale (nessuna config cloud)');
+                loadingStateEl.classList.add('hidden');
+                renderAll();
+                return;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // REGOLA 3: Autenticazione PRIMA di qualsiasi operazione su Firestore
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (!user) return;
+                    currentUser = user;
+                    updateSyncStatus('connected', 'Sincronizzato con il gruppo');
+
+                    // Seed iniziale solo se il database è completamente vuoto
+                    await seedInitialDataIfEmpty();
+
+                    // Avvia listener in tempo reale per categorie e riquadri
+                    listenToCategories();
+                    listenToNotes();
+                });
+
+            } catch (error) {
+                console.error("Errore inizializzazione cloud:", error);
+                updateSyncStatus('error', 'Errore di connessione');
+                loadingStateEl.classList.add('hidden');
+                renderAll();
+            }
+        }
+
+        function updateSyncStatus(status, text) {
+            const dot = document.getElementById('syncDot');
+            const label = document.getElementById('syncText');
+            label.textContent = text;
+            dot.classList.remove('bg-amber-400', 'bg-emerald-400', 'bg-red-400', 'animate-pulse');
+            if (status === 'connected') {
+                dot.classList.add('bg-emerald-400');
+            } else if (status === 'error') {
+                dot.classList.add('bg-red-400');
+            } else {
+                dot.classList.add('bg-amber-400', 'animate-pulse');
+            }
+        }
+
+        // Pre-popola dati utili se la bacheca è nuova di zecca
+        async function seedInitialDataIfEmpty() {
+            if (!currentUser || !db) return;
+            try {
+                // Percorso pubblico condiviso tra tutti gli amici (RULE 1)
+                const catsRef = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
+                const notesRef = collection(db, 'artifacts', appId, 'public', 'data', 'notes');
+
+                const existingCatsSnap = await getDocs(catsRef);
+                const existingNotesSnap = await getDocs(notesRef);
+
+                if (existingCatsSnap.empty && existingNotesSnap.empty) {
+                    // Crea le 4 categorie base
+                    for (const cat of DEFAULT_CATEGORIES) {
+                        await setDoc(doc(catsRef, cat.id), {
+                            name: cat.name,
+                            icon: cat.icon,
+                            order: cat.order,
+                            isDefault: true,
+                            createdAt: Date.now()
+                        });
+                    }
+
+                    // Aggiunge riquadri di esempio per mostrare subito altezza variabile e link cliccabili
+                    await addDoc(notesRef, {
+                        categoryId: 'volo',
+                        title: 'Opzioni Volo Andata/Ritorno ✈️',
+                        content: 'Controlliamo i prezzi per Tokyo Haneda (HND) o Narita (NRT).\n\nBagaglio in stiva incluso da 23kg.\nConfronto tariffe su Skyscanner:\nhttps://www.skyscanner.it\n\nRicordarsi di fare il Visit Japan Web almeno una settimana prima della partenza:\nhttps://vjw-lp.digital.go.jp/en/',
+                        color: 'sora',
+                        createdAt: Date.now() - 2000
+                    });
+
+                    await addDoc(notesRef, {
+                        categoryId: 'attrazioni',
+                        title: 'Quartiere Asakusa & Tempio Senso-ji',
+                        content: 'Andare la mattina presto (prima delle 9:00) per evitare la folla lungo la via Nakamise-dori e assaggiare i dolcetti tradizionali appena sfornati.\n\nPosizione su Google Maps:\nhttps://maps.google.com/?q=Senso-ji+Tokyo',
+                        color: 'sakura',
+                        createdAt: Date.now() - 1000
+                    });
+
+                    await addDoc(notesRef, {
+                        categoryId: 'attrazioni',
+                        title: 'Shibuya Sky al tramonto 🌇',
+                        content: 'Prenotare i biglietti esattamente 2 settimane prima alle 17:00 ora italiana perché vanno a ruba!\nhttps://www.shibuya-scramble-square.com/sky/',
+                        color: 'yuzu',
+                        createdAt: Date.now()
+                    });
+                }
+            } catch (err) {
+                console.error("Errore durante il pre-popolamento:", err);
+            }
+        }
+
+        // Listener tempo reale sulle categorie (RULE 2: nessuna query complessa, ordiniamo in JS)
+        function listenToCategories() {
+            if (!currentUser || !db) return;
+            const catsRef = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
+
+            onSnapshot(catsRef, (snapshot) => {
+                if (snapshot.empty) {
+                    categories = [...DEFAULT_CATEGORIES];
+                } else {
+                    const loaded = [];
+                    snapshot.forEach(docSnap => {
+                        loaded.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+                    // Ordinamento in memoria
+                    loaded.sort((a, b) => (a.order || 99) - (b.order || 99) || (a.createdAt || 0) - (b.createdAt || 0));
+                    categories = loaded;
+                }
+
+                // Se la categoria attiva è stata eliminata da un amico, torna alla prima disponibile
+                if (!categories.some(c => c.id === activeCategoryId) && categories.length > 0) {
+                    activeCategoryId = categories[0].id;
+                }
+
+                renderSidebar();
+                renderHeaderAndNotes();
+            }, (error) => {
+                console.error("Errore ascolto categorie:", error);
+            });
+        }
+
+        // Listener tempo reale sui riquadri
+        function listenToNotes() {
+            if (!currentUser || !db) return;
+            const notesRef = collection(db, 'artifacts', appId, 'public', 'data', 'notes');
+
+            onSnapshot(notesRef, (snapshot) => {
+                const loaded = [];
+                snapshot.forEach(docSnap => {
+                    loaded.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                // Ordina dal più recente al meno recente in memoria
+                loaded.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                notes = loaded;
+
+                loadingStateEl.classList.add('hidden');
+                renderSidebar(); // Aggiorna i contatori badge
+                renderHeaderAndNotes();
+            }, (error) => {
+                console.error("Errore ascolto riquadri:", error);
+                loadingStateEl.classList.add('hidden');
+            });
+        }
+
+        // =========================================================================
+        // 3. RENDERING INTERFACCIA (SIDEBAR + BACHECA MASONRY)
+        // =========================================================================
+        function renderAll() {
+            renderSidebar();
+            renderHeaderAndNotes();
+        }
+
+        function renderSidebar() {
+            categoryListEl.innerHTML = categories.map(cat => {
+                const isActive = cat.id === activeCategoryId;
+                const count = notes.filter(n => n.categoryId === cat.id).length;
+
+                return `
+                    <div class="group relative flex items-center">
+                        <button onclick="selectCategory('${cat.id}')"
+                            class="w-full flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl text-left text-sm font-medium transition-all duration-150 cursor-pointer ${
+                                isActive
+                                    ? 'bg-torii-500 text-white shadow-md shadow-torii-500/25 font-semibold'
+                                    : 'text-indigo-100/85 hover:bg-indigoJapan-800 hover:text-white'
+                            }">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="text-lg shrink-0">${cat.icon || '📌'}</span>
+                                <span class="truncate">${escapeHtml(cat.name)}</span>
+                            </div>
+                            <span class="text-xs px-2 py-0.5 rounded-full shrink-0 ${
+                                isActive
+                                    ? 'bg-white/20 text-white'
+                                    : 'bg-indigoJapan-950/60 text-indigo-300'
+                            }">${count}</span>
+                        </button>
+
+                        ${!cat.isDefault ? `
+                            <button onclick="confirmDeleteCategory('${cat.id}', '${escapeHtml(cat.name)}')" title="Elimina categoria"
+                                class="opacity-0 group-hover:opacity-100 focus:opacity-100 absolute right-11 p-1.5 rounded-lg text-indigo-300 hover:text-red-300 hover:bg-indigoJapan-950/80 transition-all cursor-pointer">
+                                <i class="ph ph-trash text-sm"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderHeaderAndNotes() {
+            const currentCat = categories.find(c => c.id === activeCategoryId) || categories[0];
+            if (!currentCat) return;
+
+            const filteredNotes = notes.filter(n => n.categoryId === currentCat.id);
+
+            // Aggiorna intestazione pagina
+            activeCategoryIconEl.textContent = currentCat.icon || '📌';
+            activeCategoryTitleEl.textContent = currentCat.name;
+            activeCategorySubtitleEl.textContent = filteredNotes.length === 0
+                ? 'Nessun appunto inserito finora'
+                : `${filteredNotes.length} ${filteredNotes.length === 1 ? 'riquadro salvato' : 'riquadri salvati'}`;
+
+            // Mostra stato vuoto o griglia
+            if (filteredNotes.length === 0) {
+                notesGridEl.innerHTML = '';
+                emptyStateEl.classList.remove('hidden');
+            } else {
+                emptyStateEl.classList.add('hidden');
+                notesGridEl.innerHTML = filteredNotes.map(note => createNoteCardHTML(note)).join('');
+            }
+        }
+
+        // Genera l'HTML di un singolo riquadro adattivo con parsing automatico dei link
+        function createNoteCardHTML(note) {
+            const colorTheme = CARD_COLORS.find(c => c.id === note.color) || CARD_COLORS[0];
+            const formattedBody = formatTextWithLinks(note.content || '');
+
+            return `
+                <article class="masonry-item rounded-2xl ${colorTheme.bg} border ${colorTheme.border} shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden group">
+                    <!-- Barra superiore sottile colorata -->
+                    <div class="h-1.5 w-full ${colorTheme.accent}"></div>
+
+                    <div class="p-5">
+                        <!-- Intestazione Card con Titolo e Azioni -->
+                        <div class="flex items-start justify-between gap-3 mb-2.5">
+                            <h3 class="font-bold text-base sm:text-lg text-indigoJapan-950 leading-snug break-words">
+                                ${escapeHtml(note.title)}
+                            </h3>
+
+                            <!-- Pulsanti Modifica / Elimina -->
+                            <div class="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
+                                <button onclick="openEditNoteModal('${note.id}')" title="Modifica riquadro"
+                                    class="p-1.5 rounded-lg text-slate-400 hover:text-indigoJapan-900 hover:bg-black/5 transition-colors cursor-pointer">
+                                    <i class="ph ph-pencil-simple text-base"></i>
+                                </button>
+                                <button onclick="confirmDeleteNote('${note.id}')" title="Elimina riquadro"
+                                    class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                                    <i class="ph ph-trash text-base"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Corpo del riquadro: altezza variabile in base al contenuto + link cliccabili -->
+                        ${note.content ? `
+                            <div class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words">${formattedBody}</div>
+                        ` : `
+                            <p class="text-xs italic text-slate-400">Nessuna nota aggiuntiva</p>
+                        `}
+                    </div>
+                </article>
+            `;
+        }
+
+        // Converte URL http/https in link cliccabili sicuri che si aprono in una nuova scheda
+        function formatTextWithLinks(rawText) {
+            const escaped = escapeHtml(rawText);
+            const urlRegex = /(https?:\/\/[^\s<]+)/g;
+            return escaped.replace(urlRegex, (url) => {
+                // Mostra un'etichetta pulita se il link è molto lungo
+                let displayUrl = url;
+                try {
+                    const parsed = new URL(url);
+                    displayUrl = parsed.hostname.replace(/^www\./, '') + (parsed.pathname !== '/' ? parsed.pathname : '');
+                    if (displayUrl.length > 38) {
+                        displayUrl = displayUrl.substring(0, 35) + '...';
+                    }
+                } catch (e) {}
+
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-torii-600 hover:text-torii-500 underline decoration-torii-500/40 hover:decoration-torii-500 font-medium break-all transition-colors"><span>${displayUrl}</span><i class="ph ph-arrow-square-out text-xs shrink-0"></i></a>`;
+            });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // =========================================================================
+        // 4. AZIONI UTENTE (CRUD CATEGORIE E RIQUADRI)
+        // =========================================================================
+        window.selectCategory = function(catId) {
+            activeCategoryId = catId;
+            // Chiude sidebar su mobile dopo la selezione
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            document.getElementById('mobileOverlay').classList.add('hidden');
+            renderAll();
+        };
+
+        window.selectCardColor = function(colorId) {
+            selectedCardColor = colorId;
+            document.querySelectorAll('.color-option').forEach(btn => {
+                if (btn.dataset.color === colorId) {
+                    btn.classList.add('ring-2', 'ring-torii-500', 'border-torii-500', 'bg-washi-50');
+                    btn.classList.remove('border-slate-200');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-torii-500', 'border-torii-500', 'bg-washi-50');
+                    btn.classList.add('border-slate-200');
+                }
+            });
+        };
+
+        window.selectCategoryEmoji = function(emoji) {
+            selectedCategoryEmoji = emoji;
+            document.querySelectorAll('.emoji-option').forEach(btn => {
+                if (btn.dataset.emoji === emoji) {
+                    btn.classList.add('border-indigoJapan-900', 'bg-indigo-50', 'ring-2', 'ring-indigoJapan-900/20');
+                    btn.classList.remove('border-washi-200');
+                } else {
+                    btn.classList.remove('border-indigoJapan-900', 'bg-indigo-50', 'ring-2', 'ring-indigoJapan-900/20');
+                    btn.classList.add('border-washi-200');
+                }
+            });
+        };
+
+        // Apertura modale nuovo riquadro
+        window.openNoteModal = function() {
+            document.getElementById('editNoteId').value = '';
+            document.getElementById('noteModalTitle').innerHTML = `<i class="ph ph-note-pencil text-torii-500 text-xl"></i><span>Nuovo riquadro</span>`;
+            document.getElementById('noteTitleInput').value = '';
+            document.getElementById('noteContentInput').value = '';
+            selectCardColor('washi');
+
+            const modal = document.getElementById('noteModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('noteTitleInput').focus(), 100);
+        };
+
+        // Apertura modale modifica riquadro esistente
+        window.openEditNoteModal = function(noteId) {
+            const note = notes.find(n => n.id === noteId);
+            if (!note) return;
+
+            document.getElementById('editNoteId').value = note.id;
+            document.getElementById('noteModalTitle').innerHTML = `<i class="ph ph-pencil-simple text-torii-500 text-xl"></i><span>Modifica riquadro</span>`;
+            document.getElementById('noteTitleInput').value = note.title || '';
+            document.getElementById('noteContentInput').value = note.content || '';
+            selectCardColor(note.color || 'washi');
+
+            const modal = document.getElementById('noteModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('noteTitleInput').focus(), 100);
+        };
+
+        window.closeNoteModal = function() {
+            const modal = document.getElementById('noteModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.closeCategoryModal = function() {
+            const modal = document.getElementById('categoryModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.closeShareModal = function() {
+            const modal = document.getElementById('shareModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.closeConfirmModal = function() {
+            const modal = document.getElementById('confirmModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            pendingConfirmAction = null;
+        };
+
+        // Salvataggio nuovo riquadro o modifica su Firestore
+        async function handleNoteSubmit(e) {
+            e.preventDefault();
+            const title = document.getElementById('noteTitleInput').value.trim();
+            const content = document.getElementById('noteContentInput').value.trim();
+            const editId = document.getElementById('editNoteId').value;
+
+            if (!title) return;
+
+            closeNoteModal();
+
+            if (!currentUser || !db) {
+                // Fallback locale se offline/senza config
+                if (editId) {
+                    const idx = notes.findIndex(n => n.id === editId);
+                    if (idx !== -1) notes[idx] = { ...notes[idx], title, content, color: selectedCardColor };
+                } else {
+                    notes.unshift({ id: 'local-' + Date.now(), categoryId: activeCategoryId, title, content, color: selectedCardColor, createdAt: Date.now() });
+                }
+                renderAll();
+                showToast('Riquadro salvato');
+                return;
+            }
+
+            try {
+                const notesRef = collection(db, 'artifacts', appId, 'public', 'data', 'notes');
+                if (editId) {
+                    await updateDoc(doc(notesRef, editId), {
+                        title,
+                        content,
+                        color: selectedCardColor,
+                        updatedAt: Date.now()
+                    });
+                    showToast('Riquadro aggiornato!');
+                } else {
+                    await addDoc(notesRef, {
+                        categoryId: activeCategoryId,
+                        title,
+                        content,
+                        color: selectedCardColor,
+                        createdAt: Date.now()
+                    });
+                    showToast('Nuovo riquadro aggiunto!');
+                }
+            } catch (err) {
+                console.error("Errore salvataggio riquadro:", err);
+                showToast('Errore durante il salvataggio', true);
+            }
+        }
+
+        // Creazione nuova categoria nella barra laterale
+        async function handleCategorySubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('categoryNameInput').value.trim();
+            if (!name) return;
+
+            closeCategoryModal();
+
+            const slugId = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 1000);
+            const newOrder = categories.length + 1;
+
+            if (!currentUser || !db) {
+                categories.push({ id: slugId, name, icon: selectedCategoryEmoji, order: newOrder, isDefault: false });
+                activeCategoryId = slugId;
+                renderAll();
+                showToast(`Pagina "${name}" creata!`);
+                return;
+            }
+
+            try {
+                const catsRef = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
+                await setDoc(doc(catsRef, slugId), {
+                    name,
+                    icon: selectedCategoryEmoji,
+                    order: newOrder,
+                    isDefault: false,
+                    createdAt: Date.now()
+                });
+                activeCategoryId = slugId;
+                showToast(`Pagina "${name}" aggiunta!`);
+            } catch (err) {
+                console.error("Errore creazione categoria:", err);
+                showToast('Errore nella creazione della pagina', true);
+            }
+        }
+
+        // Conferma ed eliminazione riquadro
+        window.confirmDeleteNote = function(noteId) {
+            document.getElementById('confirmTitle').textContent = 'Eliminare questo riquadro?';
+            document.getElementById('confirmMessage').textContent = 'Verrà rimosso per tutti i partecipanti al viaggio.';
+            pendingConfirmAction = async () => {
+                if (!currentUser || !db) {
+                    notes = notes.filter(n => n.id !== noteId);
+                    renderAll();
+                    showToast('Riquadro eliminato');
+                    return;
+                }
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notes', noteId));
+                    showToast('Riquadro eliminato');
+                } catch (err) {
+                    console.error("Errore eliminazione riquadro:", err);
+                    showToast('Errore durante l\'eliminazione', true);
+                }
+            };
+            const modal = document.getElementById('confirmModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        // Conferma ed eliminazione categoria personalizzata
+        window.confirmDeleteCategory = function(catId, catName) {
+            document.getElementById('confirmTitle').textContent = `Eliminare "${catName}"?`;
+            document.getElementById('confirmMessage').textContent = 'La pagina verrà rimossa dalla barra laterale insieme ai suoi riquadri.';
+            pendingConfirmAction = async () => {
+                if (!currentUser || !db) {
+                    categories = categories.filter(c => c.id !== catId);
+                    notes = notes.filter(n => n.categoryId !== catId);
+                    if (activeCategoryId === catId) activeCategoryId = categories[0]?.id || 'volo';
+                    renderAll();
+                    showToast('Categoria eliminata');
+                    return;
+                }
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', catId));
+                    // Elimina anche eventuali riquadri associati a quella categoria
+                    const relatedNotes = notes.filter(n => n.categoryId === catId);
+                    for (const rn of relatedNotes) {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notes', rn.id));
+                    }
+                    showToast('Categoria eliminata');
+                } catch (err) {
+                    console.error("Errore eliminazione categoria:", err);
+                    showToast('Errore durante l\'eliminazione', true);
+                }
+            };
+            const modal = document.getElementById('confirmModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        // Copia link negli appunti (compatibile anche con iframe)
+        window.copyShareLink = function() {
+            const input = document.getElementById('shareUrlInput');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                showToast('Link copiato! Incollalo nella chat degli amici');
+            } catch (err) {
+                showToast('Seleziona e copia il link manualmente', true);
+            }
+        };
+
+        // Mostra notifica Toast
+        let toastTimeout;
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+
+            msg.textContent = message;
+            icon.className = isError
+                ? 'ph ph-warning-circle text-red-400 text-lg'
+                : 'ph ph-check-circle text-emerald-400 text-lg';
+
+            toast.classList.remove('opacity-0', 'translate-y-2', 'pointer-events-none');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // Avvio dell'app
+        initUIControls();
+        initFirebase();
+    </script>
+</body>
+</html>
