@@ -196,6 +196,34 @@
                     <p class="text-slate-600 font-medium">Preparazione dell'itinerario in corso...</p>
                 </div>
 
+                <!-- Documento Google incorporato (visibile solo nella sezione Attrazioni / Cose da fare) -->
+                <div id="embeddedDocSection" class="hidden mb-8 bg-white rounded-3xl border border-washi-200 shadow-sm overflow-hidden">
+                    <div class="px-5 py-3.5 bg-washi-50 border-b border-washi-200 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-lg">
+                                <i class="ph ph-file-text"></i>
+                            </span>
+                            <div>
+                                <h3 class="font-bold text-sm sm:text-base text-indigoJapan-950">Documento condiviso del gruppo</h3>
+                                <p class="text-xs text-slate-500">Modificabile direttamente qui sotto oppure a schermo intero</p>
+                            </div>
+                        </div>
+                        <a href="https://docs.google.com/document/d/1PqMdAc6lKcyvc-KGy-HWhllXrrxHUZv28qfdarF69Tc/edit?usp=sharing" target="_blank" rel="noopener noreferrer"
+                            class="px-3.5 py-2 rounded-xl bg-indigoJapan-900 hover:bg-indigoJapan-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-all">
+                            <span>Apri su Google Docs</span>
+                            <i class="ph ph-arrow-square-out text-sm"></i>
+                        </a>
+                    </div>
+                    <div class="w-full bg-slate-100">
+                        <iframe
+                            src="https://docs.google.com/document/d/1PqMdAc6lKcyvc-KGy-HWhllXrrxHUZv28qfdarF69Tc/edit?embedded=true"
+                            class="w-full h-[550px] sm:h-[650px] border-0"
+                            loading="lazy"
+                            title="Documento condiviso Giappone">
+                        </iframe>
+                    </div>
+                </div>
+
                 <!-- Stato vuoto (quando una pagina non ha ancora riquadri) -->
                 <div id="emptyState" class="hidden py-16 px-4 flex flex-col items-center justify-center text-center bg-white/60 border border-dashed border-washi-200 rounded-3xl max-w-lg mx-auto mt-6">
                     <div class="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl mb-4 shadow-xs">
@@ -743,6 +771,12 @@
         function renderHeaderAndNotes() {
             const currentCat = categories.find(c => c.id === activeCategoryId) || categories[0];
             if (!currentCat) return;
+
+            // Mostra il Google Doc incorporato solo nella pagina "Attrazioni / Cose da fare"
+            const embeddedDocEl = document.getElementById('embeddedDocSection');
+            if (embeddedDocEl) {
+                embeddedDocEl.classList.toggle('hidden', currentCat.id !== 'attrazioni');
+            }
 
             const filteredNotes = notes.filter(n => n.categoryId === currentCat.id);
 
